@@ -4,10 +4,9 @@ def load_setting(file,head):
         for i in content:
             try:
                 s=i.replace('\n','').split(f'{head}==')[1]
-                print (s)
+                #print (s)
                 return s
             except:
                 pass
-
 def load_game():
     pass

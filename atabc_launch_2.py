@@ -90,7 +90,7 @@ def root_window():
         set_path.grid(row=6,column=1,pady=10,sticky=W)
         ttk.Button(setting,text='选取路径',width=8,style='setting.TButton',command=lambda : choose_path(entry=set_path)).grid(row=6,column=2,sticky='W')
         ttk.Label(setting,text='设置分辨率',style='setting.TLabel').grid(row=7,column=1,sticky='W',pady=10)
-        set_resolution=ttk.Combobox(setting, width = 26,state='readonly',values=['请选择分辨率','1280x720','1920x1080','2560x1440'])
+        set_resolution=ttk.Combobox(setting,width=26,state='readonly',values=['请选择分辨率','1280x720','1920x1080','2560x1440'])
         set_resolution.current(0)
         set_resolution.grid(row=8,column=1,sticky='W')
         next=ttk.Label(setting,text='下一步>>',font=('微软雅黑',20),background='AliceBlue',cursor="hand2")
@@ -113,8 +113,10 @@ def root_window():
                         
                         root.destroy()
                         os.chdir(f'{project_path}')
-                        from gameeditor import launch_editor
-                        launch_editor()
+                        from gameeditor import Game_editor
+                        editor=Tk()
+                        game_editor=Game_editor(editor)
+
                     except FileExistsError as fileerror:
                         messagebox.showerror('warning',f'{fileerror}')
 
@@ -138,8 +140,9 @@ def root_window():
                             messagebox.showinfo('tips',f'默认创建在桌面\n名为{setname_project}')
                             root.destroy()
                             os.chdir(f'{project_path}')
-                            from gameeditor import launch_editor
-                            launch_editor()
+                            from gameeditor import Game_editor
+                            editor=Tk()
+                            game_editor=Game_editor(editor)
                 except FileExistsError as fileerror:
                     messagebox.showerror('warning',f'{fileerror}')
                     '''这里是默认设置使用'''
@@ -223,8 +226,10 @@ def root_window():
         if os.path.exists(folder_path+'/config/config.gset'):
             root.destroy()
             os.chdir(f'{folder_path}')
-            from gameeditor import launch_editor
-            launch_editor()
+            from gameeditor import Game_editor
+            editor=Tk()
+            game_editor=Game_editor(editor)
+
             
         else:
             messagebox.showerror('warning','未检测到工程文件')

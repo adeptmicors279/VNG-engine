@@ -2,21 +2,16 @@ import tkinter
 from tkinter import ttk
 from tkinter import *
 import webbrowser
-from tkinter import messagebox
-from tkinter.simpledialog import askinteger, askfloat, askstring
+from tkinter import messagebox 
 import os
+from tkinter.simpledialog import askstring,askinteger
+
 class Game_editor():
     
     def __init__(self,editor):
         self.editor=editor
         self.editor.title('GalGame editor')
         self.editor.state("zoomed")
-
-        #style
-        style=ttk.Style()
-
-
-
         self.screen_width=editor.winfo_screenwidth()
         self.screen_height=editor.winfo_screenheight()
         self.editor.geometry(f'{int(self.screen_width*0.7)}x{int(self.screen_height*0.8)}')
@@ -38,7 +33,8 @@ class Game_editor():
         self.right_paned.add(self.right_buttom_frame)
         self.set_menu()
         self.outline()
-        
+        self.refresh_treeview()
+        self.listening()
         
         self.start()
 
@@ -69,9 +65,18 @@ class Game_editor():
         #关于
         self.menu.add_command(label='关于',command=self.show_about)
 
+        #右键
+        self.click_menu=Menu(self.editor,tearoff=0)
+        self.click_menu.add_command(label='打开')
+        self.click_menu.add_command(label='删除',command=lambda:self.delete_outline())
+        self.click_menu.add_command(label='修改',command=lambda:messagebox.showinfo('tips','未完成'))
+
+
+
+
     def show_about(self):
         show_about=Toplevel()
-        show_about.transient(editor)
+        show_about.transient(self.editor)
         show_about.title('About')
         show_about.resizable(0,0)
         show_about.geometry(f'{int(self.screen_width*0.3)}x{int(self.screen_height*0.4)}+{int(self.screen_width*0.5-self.screen_width*0.3/2)}+{int(self.screen_height*0.5-self.screen_height*0.4/2)}')
@@ -89,34 +94,123 @@ class Game_editor():
         show_about.grab_set()  # 捕捉所有的交互事件
         show_about.wait_window()        
 
-    def outline(self):
 
-        def create_outline():
-            
-            pass
+    def create_outline(self,event):
+        set_outline=Toplevel()
+        set_outline.transient(self.editor)
+        set_outline.title('编辑')
+        set_outline.resizable(0,0)
+        set_outline.geometry(f'{int(self.screen_width*0.3)}x{int(self.screen_height*0.4)}+{int(self.screen_width*0.5-self.screen_width*0.3/2)}+{int(self.screen_height*0.5-self.screen_height*0.4/2)}')
+        Label(set_outline,text='编辑大纲').pack(fill='x')
+        choose_type=ttk.Combobox(set_outline,values=['请选择','主线','支线'],state='readonly')
+        choose_type.pack(fill='x')
+        choose_type.current(0)
+        Label(set_outline,text='输入名称').pack(fill='x')
+        name=ttk.Entry(set_outline)
+        name.pack(fill='x')
+        def confirm():
+            verify_list=os.walk('plot\\line\\')
+            for i,dirs,f in verify_list:
+                if f:
+                    for j in f:
+                        if j==str(name.get())+'.gl':
+                            messagebox.showwarning('warning','该名称已存在')
+                            return
+                        else:
+                            if choose_type.get()=='请选择' or name.get()=='':
+                                messagebox.showwarning('warning','请填写完整')
+                                return
+                            elif choose_type.get()=='主线' and name.get()!='':
+                                self.outline_tree.insert('','end',text=str(name.get()),values=('主线'))
+                                type='main'
+                            elif choose_type.get()=='支线' and name.get()!='':
+                                self.outline_tree.insert('','end',text=str(name.get()),values=('支线'))
+                                type='branch'
+                            with open(f'plot\\line\\{str(name.get())}.gl','w',encoding='utf-8') as f:
+                                f.write('type=='+type+'\n'+'name=='+str(name.get()))
+                                set_outline.destroy()
+                else:
+                    if choose_type.get()=='请选择' or name.get()=='':
+                        messagebox.showwarning('warning','请填写完整')
+                        return
+                    elif choose_type.get()=='主线' and name.get()!='':
+                        self.outline_tree.insert('','end',text=str(name.get()),values=('主线'))
+                        type='main'
+                    elif choose_type.get()=='支线' and name.get()!='':
+                        self.outline_tree.insert('','end',text=str(name.get()),values=('支线'))
+                        type='branch'
+                    with open(f'plot\\line\\{str(name.get())}.gl','w',encoding='utf-8') as f:
+                        f.write('type=='+type+'\n'+'name=='+str(name.get()))
+                        set_outline.destroy()
+                        
+
+        ttk.Button(set_outline,text='取消',command=lambda:set_outline.destroy()).pack(fill='x',side='bottom')
+        ttk.Button(set_outline,text='确定',command=lambda:confirm()).pack(fill='x',side='bottom')
+        
+
+        set_outline.grab_set()
+        set_outline.wait_window()
+        self.refresh_treeview()
+
+    def outline(self):
+        
+        
 
         cre_but=Label(self.left_frame, text='    +    ',bg='white',font=('微软黑雅',10,'bold'))
         cre_but.pack(fill='x',side='top')
         cre_but.bind('<Enter>',lambda event:cre_but.configure(bg='#DADADA'))
         cre_but.bind('<Leave>',lambda event:cre_but.configure(bg='white'))
-
+        cre_but.bind('<Button-1>',lambda event:self.create_outline(event))
         self.outline_frame=Frame(self.left_frame,bg='white',width=150)
         self.outline_frame.pack(fill='both',side='bottom',expand=True)
 
-        self.outline_tree=ttk.Treeview(self.outline_frame)
-
-
+        self.outline_tree=ttk.Treeview(self.outline_frame,columns=['type','name'],show='headings')
+        self.outline_tree.heading('type',text='类型')
+        self.outline_tree.heading('name',text='名称')
+        self.outline_tree.column('type',width=50,anchor=W)
+        self.outline_tree.column('name',width=90,anchor=W)
         self.outline_tree.pack(fill='both',expand=True)
+        
 
+
+
+    def refresh_treeview(self):
+        self.outline_tree.delete(*self.outline_tree.get_children())
+        #插入节点
+        verify_list=os.walk('plot\\line\\')
+        for i,dirs,f in verify_list:
+            if f:
+                for j in f:
+                    import converter
+                    type=converter.load_setting(f'plot\\line\\{j}','type')
+                    name=converter.load_setting(f'plot\\line\\{j}','name')
+                    self.outline_tree.insert('','end',values=(type,name))
+
+    def delete_outline(self):
+        if self.outline_tree.selection():
+            ask=messagebox.askyesno('删除',f'是否删除  {self.outline_tree.item(self.outline_tree.selection())["values"][1]}')
+            if ask==True:
+                os.remove(f'plot\\line\\{self.outline_tree.item(self.outline_tree.selection())["values"][1]}.gl')
+                self.refresh_treeview()
+            else:
+                pass
+            pass
+        else:
+            pass
         
-        
-        
-        """cre_but.grid(row=0, column=0)
-        
-        # 确保left_frame能够根据需要扩展其内部控件
-        '''self.left_frame.grid_rowconfigure(0,weight=1)'''
-        self.left_frame.grid_columnconfigure(0,weight=1)
-        self.left_frame.grid_columnconfigure(1,weight=1)# 如果需要，也可以设置列权重"""
+
+
+
+    def outline_menu(self,event):
+        if self.outline_tree.selection():
+            self.click_menu.post(event.x_root, event.y_root)
+        else:
+            pass
+
+    def listening(self):
+        self.outline_tree.bind('<Button-3>',self.outline_menu)
+
+
 
 
     
@@ -125,5 +219,7 @@ class Game_editor():
 
 
 if __name__=='__main__':
+    folder_path = r'C:\Users\1\Desktop\default_name'
+    os.chdir(folder_path)
     editor=Tk()
     game_editor=Game_editor(editor)

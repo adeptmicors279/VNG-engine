@@ -1,25 +1,28 @@
-from tkinter import Tk, Label
-from PIL import ImageFont, ImageDraw, ImageTk,Image
+import os
+from tkinter import Tk, messagebox
 
-root = Tk()
+# 确保路径正确
+folder_path = r'C:\Users\1\Desktop\default_name\plot\line'
 
-# 加载自定义字体文件
-font_path = "iconfont.ttf"
-font_size = 20
-custom_font = ImageFont.truetype(font_path, font_size)
+# 更改工作目录
+os.chdir(folder_path)
 
-# 创建一个带有自定义字体的图片
-width = 200
-height = 50
-image = Image.new("RGBA", (width, height), (255, 255, 255))
-draw = ImageDraw.Draw(image)
-draw.text((10, 10), "Custom Font", font=custom_font, fill=(0, 0, 0))
-
-# 将图片转换为Tkinter支持的格式
-tk_image = ImageTk.PhotoImage(image)
-
-# 在Tkinter窗口中显示带有自定义字体的标签
-label = Label(root, image=tk_image)
-label.pack()
-
-root.mainloop()
+# 检查文件夹是否存在
+if os.path.exists(folder_path) and os.path.isdir(folder_path):
+    # 遍历文件夹
+    for root, dirs, files in os.walk('.'):
+        if files:  # 只有当files非空时才执行
+            for file in files:
+                if file == '123.gl':
+                    messagebox.showwarning('Warning', '该名称已存在')
+                    print('该名称不可用')
+                else:
+                    messagebox.showinfo('Info', '该名称可用')
+                    print('该名称可用')
+        else:
+            # 如果文件夹为空
+            messagebox.showinfo('Info', '文件夹为空')
+            print('文件夹为空')
+else:
+    messagebox.showerror('Error', '路径不存在或不是文件夹')
+    print('路径不存在或不是文件夹')
