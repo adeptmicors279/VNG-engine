@@ -5,6 +5,7 @@ import webbrowser
 from tkinter import messagebox 
 import os
 from tkinter.simpledialog import askstring,askinteger
+import converter
 
 class Game_editor():
     
@@ -67,9 +68,10 @@ class Game_editor():
 
         #右键
         self.click_menu=Menu(self.editor,tearoff=0)
-        self.click_menu.add_command(label='打开')
+        self.click_menu.add_command(label='打开',command=lambda:self.open_outline())
+        self.click_menu.add_command(label='修改',command=lambda:self.change_outline())
         self.click_menu.add_command(label='删除',command=lambda:self.delete_outline())
-        self.click_menu.add_command(label='修改',command=lambda:messagebox.showinfo('tips','未完成'))
+        
 
 
 
@@ -154,7 +156,6 @@ class Game_editor():
 
     def outline(self):
         
-        
 
         cre_but=Label(self.left_frame, text='    +    ',bg='white',font=('微软黑雅',10,'bold'))
         cre_but.pack(fill='x',side='top')
@@ -170,7 +171,15 @@ class Game_editor():
         self.outline_tree.column('type',width=50,anchor=W)
         self.outline_tree.column('name',width=90,anchor=W)
         self.outline_tree.pack(fill='both',expand=True)
+    
+    def open_outline(self):
+        if self.outline_tree.selection():
+            print ('success')
+
         
+
+
+
 
 
 
@@ -181,14 +190,69 @@ class Game_editor():
         for i,dirs,f in verify_list:
             if f:
                 for j in f:
-                    import converter
                     type=converter.load_setting(f'plot\\line\\{j}','type')
                     name=converter.load_setting(f'plot\\line\\{j}','name')
                     self.outline_tree.insert('','end',values=(type,name))
 
+    
+    def change_outline(self):
+        if self.outline_tree.selection():
+            change=Toplevel()
+            change.transient(self.editor)
+            change.title(f'修改"{self.outline_tree.item(self.outline_tree.selection())["values"][1]}"')
+            change.geometry(f'{int(self.screen_width*0.3)}x{int(self.screen_height*0.4)}+{int(self.screen_width*0.5-self.screen_width*0.3/2)}+{int(self.screen_height*0.5-self.screen_height*0.4/2)}')
+            type=converter.load_setting(f'plot\\line\\{self.outline_tree.item(self.outline_tree.selection())["values"][1]}.gl','type')
+            glname=converter.load_setting(f'plot\\line\\{self.outline_tree.item(self.outline_tree.selection())["values"][1]}.gl','name')
+            Label(change,text='编辑大纲').pack(fill='x')
+            choose_type=ttk.Combobox(change,values=['请选择','主线','支线'],state='readonly')
+            choose_type.pack(fill='x')
+            choose_type.current(1 if type=='main' else 2)
+            Label(change,text='输入名称').pack(fill='x')
+            name=ttk.Entry(change)
+            name.insert(0,f'{glname}')
+            name.pack(fill='x')
+            def confirm():
+                verify_list=os.walk('plot\\line\\')
+                for i,dirs,f in verify_list:
+                    if f:
+                        for j in f:
+                            if j==str(name.get())+'.gl':
+                                if glname!=str(name.get()):
+                                    messagebox.showerror('warning','该名称已存在')
+                                elif glname==str(name.get()):
+                                    messagebox.showwarning('warning','请做出更改')
+                            elif j==str(name.get()+'.gl'):
+                                os.remove(f'plot\\line\\{glname}.gl')
+                                if choose_type.get()=='请选择' or name.get()=='':
+                                    messagebox.showwarning('warning','请填写完整')
+                                    return
+                                elif choose_type.get()=='主线' and name.get()!='':
+                                    type='main'
+                                elif choose_type.get()=='支线' and name.get()!='':
+                                    type='branch'
+                                with open(f'plot\\line\\{str(name.get())}.gl','w',encoding='utf-8') as f:
+                                    f.write('type=='+type+'\n'+'name=='+str(name.get()))
+                                    
+                                    change.destroy()
+                                    
+                    
+
+            ttk.Button(change,text='取消',command=lambda:change.destroy()).pack(fill='x',side='bottom')
+            ttk.Button(change,text='确定',command=lambda:confirm()).pack(fill='x',side='bottom')
+
+
+
+            change.grab_set()
+            change.wait_window()
+            self.refresh_treeview()
+
+
+
+        
+
     def delete_outline(self):
         if self.outline_tree.selection():
-            ask=messagebox.askyesno('删除',f'是否删除  {self.outline_tree.item(self.outline_tree.selection())["values"][1]}')
+            ask=messagebox.askyesno('删除',f'是否删除  "{self.outline_tree.item(self.outline_tree.selection())["values"][1]}"')
             if ask==True:
                 os.remove(f'plot\\line\\{self.outline_tree.item(self.outline_tree.selection())["values"][1]}.gl')
                 self.refresh_treeview()
